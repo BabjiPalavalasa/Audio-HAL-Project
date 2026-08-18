@@ -1,0 +1,20 @@
+# Onject files
+*.o
+
+# Staic/shared libraries
+*.a
+*.so
+
+# Test executables
+tests/test_audio_capture
+tests/test_audio_playback
+tests/test_audio_loopback
+
+# General build output
+build/
+
+# Logs
+*.log
+
+*.swp
+*.swo
