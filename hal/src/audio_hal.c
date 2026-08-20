@@ -35,10 +35,10 @@ int audio_hal_open(audio_stream_t *stream)
 {
     struct pcm_config config;
 
-    if (stream->state != AUDIO_STREAM_CONFIGURED)
+    if (stream == NULL)
         return -1;
 
-    if (stream == NULL)
+    if (stream->state != AUDIO_STREAM_CONFIGURED)
         return -1;
 
     memset(&config, 0, sizeof(config));
@@ -46,15 +46,23 @@ int audio_hal_open(audio_stream_t *stream)
     config.channels = stream->channels;
     config.rate = stream->sample_rate;
     config.format = audio_format_to_pcm_format(stream->format);
+
+    if (config.format == PCM_FORMAT_INVALID)
+    {
+        printf("HAL: Invalid PCM format\n");
+        return -1;
+    }
+
     config.period_size = 1024;
     config.period_count = 4;
+
     unsigned int flags = (stream->direction == AUDIO_PLAYBACK) ? PCM_OUT : PCM_IN;
 
     stream->pcm = pcm_open(0, 0, flags, &config);
 
     if (stream->pcm == NULL)
     {
-        printf("HAL: pcm_open returned NULL\n");
+        printf("HAL: pcm_open failed\n");
         return -1;
     }
 
@@ -76,6 +84,38 @@ int audio_hal_open(audio_stream_t *stream)
     return 0;
 }
 
+static int audio_hal_validate_configuration(unsigned int sample_rate,
+                                         unsigned int channels,
+                                         audio_format_t format,
+                                         audio_direction_t direction)
+{
+    if (sample_rate == 0)
+    {
+        printf("HAL: Invalid sample rate: %u\n", sample_rate);
+        return -1;
+    }
+
+    if (channels == 0)
+    {
+        printf("HAL: Invalid number of channels: %u\n", channels);
+        return -1;
+    }
+
+    if (audio_format_to_pcm_format(format) == PCM_FORMAT_INVALID)
+    {
+        printf("HAL: Unsupported audio format: %d\n", format);
+        return -1;
+    }
+
+    if (direction != AUDIO_PLAYBACK && direction != AUDIO_CAPTURE)
+    {
+        printf("HAL: Unsupported audio direction: %d\n", direction);
+        return -1;
+    }
+
+    return 0;
+}
+
 
 int audio_hal_configure(audio_stream_t *stream,
                         unsigned int sample_rate,
@@ -85,6 +125,12 @@ int audio_hal_configure(audio_stream_t *stream,
 {
     if (stream == NULL)
         return -1;
+
+        if(audio_hal_validate_configuration(sample_rate,channels,format,direction)<0)
+        {
+            printf("HAL: Invalid configuration\n");
+            return -1;
+        }
 
     stream->sample_rate = sample_rate;
     stream->channels = channels;
@@ -149,10 +195,9 @@ int audio_hal_write(audio_stream_t *stream,
 
     if(frames == 0)
         return -1;
+     
 
-    unsigned int bytes_per_frame = stream->channels * (pcm_format_to_bits(audio_format_to_pcm_format(stream->format)) / 8);
-
-    if((pcm_write(stream->pcm, buffer, frames*bytes_per_frame) < 0))
+    if((pcm_writei(stream->pcm, buffer, frames) < 0))
     {
         printf("HAL: pcm_write failed: %s\n", pcm_get_error(stream->pcm));
         return -1;
@@ -182,10 +227,9 @@ int audio_hal_read(audio_stream_t *stream,
     if(stream->pcm == NULL)
         return -1;
 
+    
 
-    unsigned int bytes_per_frame = stream->channels * (pcm_format_to_bits(audio_format_to_pcm_format(stream->format)) / 8);
-
-    int  ret=pcm_read(stream->pcm, buffer, frames*bytes_per_frame);
+    int  ret=pcm_readi(stream->pcm, buffer, frames);
 
     if(ret < 0)
     {
@@ -238,6 +282,13 @@ int audio_hal_close(audio_stream_t *stream)
 
     if (stream->state != AUDIO_STREAM_STOPPED)
         return -1;
+
+    if (stream->pcm != NULL)
+    {
+        pcm_close(stream->pcm);
+        stream->pcm = NULL;
+    }
+    
 
     stream->state = AUDIO_STREAM_CLOSED;
 
