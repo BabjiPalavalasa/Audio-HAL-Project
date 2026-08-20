@@ -3,6 +3,7 @@
 #include<stdint.h>
 #include<math.h>
 #include<unistd.h>
+#include<stdlib.h>
 
 #define SAMPLE_RATE 48000
 #define CHANNELS    2
