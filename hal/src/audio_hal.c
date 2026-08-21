@@ -268,6 +268,15 @@ int audio_hal_stop(audio_stream_t *stream)
     if (stream->state != AUDIO_STREAM_RUNNING)
         return -1;
 
+        if(stream->pcm != NULL)
+        {
+            if(pcm_stop(stream->pcm) < 0)
+            {
+                printf("HAL: pcm_stop failed: %s\n", pcm_get_error(stream->pcm));
+                return -1;
+            }
+        }
+
     stream->state = AUDIO_STREAM_STOPPED;
 
     printf("HAL: stream stopped\n");
