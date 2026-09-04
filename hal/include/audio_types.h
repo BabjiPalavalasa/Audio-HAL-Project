@@ -2,10 +2,21 @@
 #ifndef AUDIO_TYPES_H
 #define AUDIO_TYPES_H
 
+typedef struct {
+    int card;
+    int device;
+}pcm_endpoint_t;
+
 typedef enum {
     AUDIO_PLAYBACK,
     AUDIO_CAPTURE
 } audio_direction_t;
+
+typedef struct
+{
+    const char *card_id;
+}audio_platform_config_t;
+
 
 typedef enum {
     AUDIO_ROUTE_SPEAKER,
@@ -14,6 +25,7 @@ typedef enum {
     AUDIO_ROUTE_MIC,
     AUDIO_ROUTE_LINE_IN
 } audio_route_t;
+
 
 typedef enum {
     AUDIO_FORMAT_S16_LE,
@@ -41,7 +53,9 @@ typedef struct {
 
     audio_stream_state_t state;
 
-    struct pcm *pcm ;//Tinyalsa PCM handle
+    pcm_endpoint_t endpoint;
+
+    struct pcm *pcm ;
 } audio_stream_t;
 
 #endif

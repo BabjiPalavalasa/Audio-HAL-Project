@@ -32,11 +32,6 @@
             printf("Failed to start audio device\n");
             return 0;
         }
-        if(audio_hal_set_route(&stream,AUDIO_ROUTE_SPEAKER)!=0)
-        {
-            printf("Failed to route audio data\n");
-            return 0;
-        }
 
 
         int16_t buffer[FRAMES * CHANNELS];
